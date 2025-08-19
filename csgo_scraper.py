@@ -10,13 +10,13 @@ import time
 import csv
 import sys
 
-if len(sys.argv) != 6:
+if len(sys.argv) != 7:
     print("need 6 args")
     sys.exit(1)
 
 URL = sys.argv[1]
 rarities = [int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])]
-
+special = bool(int(sys.argv[6]))
 # === MODIFY THESE PATHS FOR YOUR SYSTEM ===
 CHROME_PATH = r"C:\Users\trevo\Downloads\chrome-win64\chrome-win64\chrome.exe"
 CHROMEDRIVER_PATH = r"C:\Users\trevo\Downloads\chromedriver-win64\chromedriver-win64\chromedriver.exe"
@@ -78,10 +78,14 @@ for link in all_links:
 all_data = []
 all_data.append(['Skin Name', 'StatTrak Factory New', 'StatTrak Factory New Median', 'StatTrak Min Wear', 'StatTrak Min Wear Median', 'StatTrak Field-Tested', 'StatTrak Field-Tested Median', 'StatTrak Well Worn', 'StatTrak Well Worn Median', 'StatTrak Battle-Scarred', 'StatTrak Battle-Scarred Median', 'Factory New', 'Factory New Median', 'Min Wear', "Min Wear Median", "Field-Tested", "Field-Tested Median", "Well-Worn", "Well-Worn Median", "Battle-Scarred", "Battle-Scarred Median", "Rarity"])
 
+coverts = rarities[0]+1
+classified = coverts+rarities[1]
+restrictied = classified + rarities[2]
+
 # === Step 2: Visit each link and grab data ===
 for idx, href in enumerate(all_links, start=1):
     temp = []
-    if idx == 1:
+    if special and idx==1:
         continue
     skin_name = href.rstrip("/").split("/")[-1]
     print("="*80)
@@ -102,11 +106,10 @@ for idx, href in enumerate(all_links, start=1):
         temp.append(p)
         print(f"  - {p}")
 
-    if idx >= rarities[3]: temp.append("Mil-Spec")
-    elif idx >= rarities[2]: temp.append("Restricted")
-    elif idx >= rarities[1]: temp.append("Classified")
-    elif idx >= rarities[0]: temp.append("Covert")
-    else: temp.append("Special Item")
+    if idx <= coverts: temp.append("Covert")
+    elif idx <= classified: temp.append("Classified")
+    elif idx <= restrictied: temp.append("Restricted")
+    else: temp.append("Mil-Spec")
     all_data.append(temp)
     
 case_name = URL.rstrip("/").split("/")[-1].replace("-","_")
