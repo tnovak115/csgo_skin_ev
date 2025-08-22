@@ -3,7 +3,51 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
-import os
+import sys, os
+from monte_carlo import simulate_case
+
+case_mapping = {
+    "Anubis_Collection_Package": "Anubis",
+    "Chroma_2_Case": "Chroma 2",
+    "Chroma_3_Case": "Chroma 3",
+    "Chroma_Case": "Chroma",
+    "Clutch_Case": "Clutch",
+    "CS20_Case": "CS20",
+    "Danger_Zone_Case": "Danger Zone",
+    "Dreams_&_Nightmares_Case": "Dreams & Nightmares",
+    "eSports_2013_Winter_Case": "eSports 2013",
+    "eSports_2014_Winter_Case": "eSports 2014",
+    "Falchion_Case": "Falchion",
+    "Fever_Case": "Fever",
+    "Fracture_Case": "Fracture",
+    "Gallery_Case": "Gallery",
+    "Gamma_2_Case": "Gamma 2",
+    "Gamma_Case": "Gamma",
+    "Glove_Case": "Glove",
+    "Horizon_Case": "Horizon",
+    "Huntsman_Weapon_Case": "Huntsman",
+    "Kilowatt_Case": "Kilowatt",
+    "Operation_Bravo_Case": "Bravo",
+    "Operation_Broken_Fang_Case": "Broken Fang",
+    "Operation_Breakout_Weapon_Case": "Breakout",
+    "Operation_Hydra_Case": "Hydra",
+    "Operation_Phoneix_Weapon_Case": "Phoenix",
+    "Operation_Riptide_Case": "Riptide",
+    "Operation_Vanguard_Weapon_Case": "Vanguard",
+    "Operation_Wildfire_Case": "Wildfire",
+    "Prisma_2_Case": "Prisma 2",
+    "Prisma_Case": "Prisma",
+    "Recoil_Case": "Recoil",
+    "Revolution_Case": "Revolution",
+    "Revolver_Case": "Revolver",
+    "Shadow_Case": "Shadow",
+    "Shattered_Web_Case": "Shaattered Web",
+    "Snakebite_Case": "Snakebite",
+    "Spectrum_2_Case": "Spectrum 2",
+    "Spectrum_Case": "Spectrum",
+    "Winter_Offensive_Weapon_Case": "Winter OFfensive",
+}
+
 #load data
 @st.cache_data
 def load_data():
@@ -17,7 +61,7 @@ def load_data():
         cases[case_name] = df
 
     specials_path = "data/csgo_special_items.csv"
-    specials = pd.read_csv(specials_path)
+    specials = pd.read_csv(specials_path, header=None)
     if "skin_name" in specials.columns:
         specials = specials.set_index("skin_name")
 
@@ -51,61 +95,41 @@ rarity_counts = case_df["Rarity"].value_counts()
 fig, ax = plt.subplots()
 ax.pie(rarity_counts, labels=rarity_counts.index, autopct="%1.1f%%")
 st.pyplot(fig)
-
 #monte carlo sim
 st.subheader("Monte Carlo Simulation")
+price = case_prices.loc[case_prices["Case Name"] == case_mapping[case_choice], "Case Price"].values[0]
 
-def simulate_case(prices, probs, n_sim):
-    """Simulate opening a case n_sim times and return total values."""
-    outcomes = np.random.choice(prices, size=n_sim, p=probs)
-    return outcomes
-
+row = specials[specials[0]==case_mapping[case_choice]].iloc[0]
+if pd.isna(row[1]):
+    row = None
 #drop stuff
-prices = case_df["price"].values
-probs = [1/len(prices)] * len(prices)
+outcomes = simulate_case(case_df,price,row, n_trails=num_sim)
 
-outcomes = simulate_case(prices, probs, num_sim)
 
-fig, ax = plt.subplots()
-ax.hist(outcomes, bins=20, edgecolor="black")
-ax.set_title("Distribution of Returns per Case")
-st.pyplot(fig)
+fig, ax = plt.subplots(figsize=(10,6))
+bin_num = int(num_sim/10)
+ax.hist(outcomes, bins=bin_num, color="skyblue", edgecolor="black", alpha=0.7)
 
-st.write(f"💰 Average Return: {np.mean(outcomes):.2f}")
-st.write(f"📉 Median Return: {np.median(outcomes):.2f}")
-st.write(f"📈 Chance of Profit: {np.mean(outcomes > 2.50) * 100:.1f}%")  # example: case cost = $2.50
+# Symmetric log scale: linear between -10 and 10, log beyond that
+linthresh = 10
+ax.set_xscale("symlog", linthresh=linthresh)
+ax.set_yscale("symlog")
+# Labels
+ax.set_xlabel("Profit per Case Opening ($)")
+ax.set_ylabel("Frequency")
 
-#breaking even
-st.subheader("Break-Even Over Multiple Cases")
+# Expected value line
+mean_outcome = np.mean(outcomes)
+ax.axvline(mean_outcome, color="red", linestyle="--", label=f"EV = {mean_outcome:.2f}")
 
-cases_opened = np.arange(1, 201)
-expected_returns = np.cumsum(np.random.choice(prices, size=(len(cases_opened),), p=probs))
+# Customize ticks: linear ticks between -linthresh and linthresh
+linear_ticks = np.arange(-linthresh, linthresh+1, 2)  # every 2 dollars
+all_ticks = np.concatenate([linear_ticks, ax.get_xticks()])  # include automatic log ticks
+ax.set_xticks(all_ticks)
+ax.get_xaxis().set_major_formatter(plt.ScalarFormatter())  # show linear numbers
 
-fig, ax = plt.subplots()
-ax.plot(cases_opened, expected_returns, label="Total Return")
-ax.plot(cases_opened, cases_opened * 2.50, label="Total Cost")  # example cost = $2.50
 ax.legend()
 st.pyplot(fig)
-
-#special item
-st.subheader("Special Item Analysis")
-if include_specials and not specials.empty:
-    st.dataframe(specials.head())
-    st.write(f"Average Special Item Price: {specials['price'].mean():.2f}")
-else:
-    st.info("This case does not contain special items.")
-
-#comparison
-st.subheader("Compare Two Cases")
-
-col1, col2 = st.columns(2)
-with col1:
-    compare_case1 = st.selectbox("Case 1", list(cases.keys()), key="c1")
-with col2:
-    compare_case2 = st.selectbox("Case 2", list(cases.keys()), key="c2")
-
-if compare_case1 != compare_case2:
-    avg1 = cases[compare_case1]["price"].mean()
-    avg2 = cases[compare_case2]["price"].mean()
-    st.write(f"📊 {compare_case1} avg item price: {avg1:.2f}")
-    st.write(f"📊 {compare_case2} avg item price: {avg2:.2f}")
+st.write(f"💰 Average Return: {np.mean(outcomes):.2f}")
+st.write(f"📉 Median Return: {np.median(outcomes):.2f}")
+st.write(f"📈 Chance of Profit: {np.mean(outcomes > (2.50+price)) * 100:.1f}%")  # example: case cost = $2.50
