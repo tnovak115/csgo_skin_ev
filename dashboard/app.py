@@ -4,8 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 import sys, os
+import seaborn as sns
 from monte_carlo import simulate_case
-
+from utils import calc_ev, monte_carlo_heatmap
 case_mapping = {
     "Anubis_Collection_Package": "Anubis",
     "Chroma_2_Case": "Chroma 2",
@@ -45,7 +46,7 @@ case_mapping = {
     "Snakebite_Case": "Snakebite",
     "Spectrum_2_Case": "Spectrum 2",
     "Spectrum_Case": "Spectrum",
-    "Winter_Offensive_Weapon_Case": "Winter OFfensive",
+    "Winter_Offensive_Weapon_Case": "Winter Offensive",
 }
 
 #load data
@@ -83,7 +84,7 @@ include_specials = st.sidebar.checkbox("Include Special Items?", value=True)
 case_df = cases[case_choice]
 
 #case general stuff
-st.title(f"🎒 {case_choice} Analysis")
+st.title(f"🎒 {case_mapping[case_choice]} Analysis")
 st.subheader("Case Contents")
 
 st.dataframe(case_df)
@@ -119,8 +120,8 @@ ax.set_xlabel("Profit per Case Opening ($)")
 ax.set_ylabel("Frequency")
 
 # Expected value line
-mean_outcome = np.mean(outcomes)
-ax.axvline(mean_outcome, color="red", linestyle="--", label=f"EV = {mean_outcome:.2f}")
+ev = calc_ev(case_df, case_mapping[case_choice]) - 2.50 - price
+ax.axvline(ev, color="red", linestyle="--", label=f"EV = {ev:.2f}")
 
 # Customize ticks: linear ticks between -linthresh and linthresh
 linear_ticks = np.arange(-linthresh, linthresh+1, 2)  # every 2 dollars
@@ -133,3 +134,40 @@ st.pyplot(fig)
 st.write(f"💰 Average Return: {np.mean(outcomes):.2f}")
 st.write(f"📉 Median Return: {np.median(outcomes):.2f}")
 st.write(f"📈 Chance of Profit: {np.mean(outcomes > (2.50+price)) * 100:.1f}%")  # example: case cost = $2.50
+
+st.subheader("💎 Expected Value Comparison Across Cases")
+
+# Compute EV for each case using friendly names from case_mapping
+ev_dict = {}
+for raw_case_name, df in cases.items():
+    friendly_name = case_mapping.get(raw_case_name, raw_case_name)
+    try:
+        ev_dict[friendly_name] = calc_ev(df, friendly_name) - 2.50 - case_prices.loc[case_prices["Case Name"] == friendly_name, "Case Price"].values[0]
+    except Exception as e:
+        print(f"Error calculating EV for {friendly_name}: {e}")
+        ev_dict[friendly_name] = np.nan
+
+# Convert to Series and sort
+ev_series = pd.Series(ev_dict).sort_values(ascending=False)
+
+# Plot
+fig, ax = plt.subplots(figsize=(14,6))
+ax.bar(ev_series.index, ev_series.values, color="skyblue")
+ax.set_ylabel("Expected Value ($)")
+ax.set_title("EV Comparison Across All Cases")
+ax.set_xticklabels(ev_series.index, rotation=45, ha="right")
+st.pyplot(fig)
+
+st.subheader("📊 Probability Heatmap: Skin Value Thresholds")
+
+num_cases_list = [1, 5, 10, 20, 50, 100, 250]           # Number of cases opened
+value_thresholds = [5, 10, 20, 50, 100, 200, 500, 1000]  # Value thresholds in $
+
+prob_matrix = monte_carlo_heatmap(case_df, num_cases_list, value_thresholds, n_sim=5000)
+
+fig, ax = plt.subplots(figsize=(10,6))
+sns.heatmap(prob_matrix, annot=True, fmt=".2f", xticklabels=num_cases_list, yticklabels=value_thresholds, cmap="Blues", cbar_kws={'label':'Probability'})
+ax.set_xlabel("Number of Cases Opened")
+ax.set_ylabel("Total Skin Value Threshold ($)")
+ax.set_title(f"Probability of Reaching Value Thresholds for {case_mapping[case_choice]}")
+st.pyplot(fig)
