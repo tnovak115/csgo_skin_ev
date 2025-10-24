@@ -110,16 +110,6 @@ def calc_ev(case_df, case_choice):
 
 
 def monte_carlo_heatmap(case_df, num_cases_list, value_thresholds, stattrak_prob=0.1, n_sim=1000):
-    """
-    Simulate opening multiple cases and compute probability of reaching each threshold.
-    
-    :param case_df: DataFrame with skin prices and rarities
-    :param num_cases_list: list of number of cases to simulate (e.g., [1,5,10,20])
-    :param value_thresholds: list of value thresholds to check (e.g., [5,10,20,50,100])
-    :param stattrak_prob: chance a skin is StatTrak
-    :param n_sim: simulations per scenario
-    :return: probability matrix (len(thresholds) x len(num_cases_list))
-    """
     prob_matrix = np.zeros((len(value_thresholds), len(num_cases_list)))
     
     # Flatten all skin+wear options with probabilities
