@@ -76,7 +76,7 @@ def load_data():
 # Load everything once
 cases, specials, case_prices = load_data()
 #sidebars
-st.sidebar.title("⚙️ Case Simulator Controls")
+st.sidebar.title("Case Simulator Controls")
 case_choice = st.sidebar.selectbox("Choose a Case", list(cases.keys()))
 num_sim = st.sidebar.slider("Number of Simulations", 1000, 100000, 10000, step=1000)
 include_specials = st.sidebar.checkbox("Include Special Items?", value=True)
@@ -131,9 +131,9 @@ ax.get_xaxis().set_major_formatter(plt.ScalarFormatter())  # show linear numbers
 
 ax.legend()
 st.pyplot(fig)
-st.write(f"💰 Average Return: {np.mean(outcomes):.2f}")
-st.write(f"📉 Median Return: {np.median(outcomes):.2f}")
-st.write(f"📈 Chance of Profit: {np.mean(outcomes > (2.50+price)) * 100:.1f}%")  # example: case cost = $2.50
+st.write(f"Average Return: {np.mean(outcomes):.2f}")
+st.write(f"Median Return: {np.median(outcomes):.2f}")
+st.write(f"Chance of Profit: {np.mean(outcomes > (2.50+price)) * 100:.1f}%")  # example: case cost = $2.50
 
 st.subheader("💎 Expected Value Comparison Across Cases")
 
@@ -158,7 +158,7 @@ ax.set_title("EV Comparison Across All Cases")
 ax.set_xticklabels(ev_series.index, rotation=45, ha="right")
 st.pyplot(fig)
 
-st.subheader("📊 Probability Heatmap: Skin Value Thresholds")
+st.subheader("Probability Heatmap: Skin Value Thresholds")
 
 num_cases_list = [1, 5, 10, 20, 50, 100, 250]           # Number of cases opened
 value_thresholds = [5, 10, 20, 50, 100, 200, 500, 1000]  # Value thresholds in $
