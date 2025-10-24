@@ -17,7 +17,7 @@ if len(sys.argv) != 7:
 URL = sys.argv[1]
 rarities = [int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])]
 special = bool(int(sys.argv[6]))
-# === MODIFY THESE PATHS FOR YOUR SYSTEM ===
+
 CHROME_PATH = r"C:\Users\trevo\Downloads\chrome-win64\chrome-win64\chrome.exe"
 CHROMEDRIVER_PATH = r"C:\Users\trevo\Downloads\chromedriver-win64\chromedriver-win64\chromedriver.exe"
 
@@ -30,24 +30,10 @@ options.add_argument("--disable-dev-shm-usage")
 service = Service(CHROMEDRIVER_PATH)
 driver = webdriver.Chrome(service=service, options=options)
 
-# === Load the page ===
 driver.get(URL)
-time.sleep(3)  # Wait for JavaScript-rendered content
+time.sleep(3)  #loading javascript content
 
-# === Parse with BeautifulSoup ===
 soup = BeautifulSoup(driver.page_source, "html.parser")
-
-"""
-print("📦 First .result-box container:\n")
-boxes = soup.select(".result-box")  # or soup.find_all(class_="result-box")
-
-if len(boxes) >= 2:
-    second_box = boxes[1]
-    print(second_box.prettify())
-else:
-    print("Less than two .result-box containers found.")
-print("\n" + "="*80 + "\n")
-"""
 
 boxes = driver.find_elements(By.CSS_SELECTOR, ".result-box")
 
@@ -69,7 +55,7 @@ for i, box in enumerate(boxes):
     except Exception as e:
         print(f"Box {i} failed:", e)
 
-# If you want them all at once later:
+# For testing proposes
 print("\n=== All potential links ===")
 for link in all_links:
     print(link)
@@ -82,7 +68,7 @@ coverts = rarities[0]+1
 classified = coverts+rarities[1]
 restrictied = classified + rarities[2]
 
-# === Step 2: Visit each link and grab data ===
+# check each link
 for idx, href in enumerate(all_links, start=1):
     temp = []
     if special and idx==1:
@@ -120,5 +106,5 @@ with open(f"{case_name}.csv", "w", newline="", encoding="utf-8") as f:
 
 print(f"Saved {case_name}.csv with {len(all_data)} rows.")
 
-# === Clean up ===
+#clean up
 driver.quit()
